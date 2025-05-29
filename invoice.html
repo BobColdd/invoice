@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-section, .invoice-preview {
+            margin-bottom: 30px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+        }
+        .item-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            align-items: flex-end;
+        }
+        .item-row input {
+            margin-bottom: 0;
+        }
+        .item-name {
+            flex: 3;
+        }
+        .item-qty, .item-price {
+            flex: 1;
+        }
+        .item-total {
+            flex: 1;
+            padding: 8px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn-print {
+            background-color: #2196F3;
+        }
+        .btn-print:hover {
+            background-color: #0b7dda;
+        }
+        .btn-send {
+            background-color: #ff9800;
+        }
+        .btn-send:hover {
+            background-color: #e68a00;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #invoice-template {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+        }
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .invoice-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .invoice-details {
+            text-align: right;
+        }
+        .invoice-to {
+            margin-bottom: 20px;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .invoice-table th {
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .invoice-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .invoice-totals {
+            margin-left: auto;
+            width: 300px;
+        }
+        .invoice-totals table {
+            width: 100%;
+        }
+        .invoice-totals td {
+            padding: 8px;
+        }
+        .invoice-totals td:last-child {
+            text-align: right;
+            font-weight: bold;
+        }
+        .invoice-footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+        }
+        .notes {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Invoice Generator</h1>
+        
+        <div class="form-section">
+            <h2>Invoice Information</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="invoice-number">Invoice Number</label>
+                    <input type="text" id="invoice-number" placeholder="INV-001">
+                </div>
+                <div class="form-group">
+                    <label for="invoice-date">Date</label>
+                    <input type="date" id="invoice-date">
+                </div>
+                <div class="form-group">
+                    <label for="due-date">Due Date</label>
+                    <input type="date" id="due-date">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="your-company">Your Company</label>
+                    <input type="text" id="your-company" placeholder="Your Company Name">
+                </div>
+                <div class="form-group">
+                    <label for="your-email">Your Email</label>
+                    <input type="email" id="your-email" placeholder="your@email.com">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="your-address">Your Address</label>
+                    <textarea id="your-address" placeholder="Street, City, State, ZIP"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="client-name">Client Name</label>
+                    <input type="text" id="client-name" placeholder="Client Name">
+                </div>
+                <div class="form-group">
+                    <label for="client-email">Client Email</label>
+                    <input type="email" id="client-email" placeholder="client@email.com">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="client-address">Client Address</label>
+                    <textarea id="client-address" placeholder="Street, City, State, ZIP"></textarea>
+                </div>
+            </div>
+            
+            <h3>Items</h3>
+            <div id="items-container">
+                <div class="item-row">
+                    <div class="item-name">
+                        <label>Description</label>
+                        <input type="text" class="item-desc" placeholder="Item description">
+                    </div>
+                    <div class="item-qty">
+                        <label>Qty</label>
+                        <input type="number" class="item-qty" placeholder="1" min="1" value="1">
+                    </div>
+                    <div class="item-price">
+                        <label>Unit Price</label>
+                        <input type="number" class="item-price" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <div class="item-total">
+                        <label>Total</label>
+                        <div class="item-total-value">0.00</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="add-item" class="btn">Add Item</button>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" placeholder="Thank you for your business!"></textarea>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="generate-invoice" class="btn">Generate Invoice</button>
+                <button id="print-invoice" class="btn btn-print">Print</button>
+                <button id="send-invoice" class="btn btn-send">Send via Email</button>
+            </div>
+        </div>
+        
+        <div class="invoice-preview">
+            <h2>Invoice Preview</h2>
+            <div id="invoice-template">
+                <div class="invoice-header">
+                    <div>
+                        <div class="invoice-title">INVOICE</div>
+                        <div id="preview-your-company">Your Company</div>
+                        <div id="preview-your-address">123 Street, City, State, ZIP</div>
+                    </div>
+                    <div class="invoice-details">
+                        <div><strong>Invoice #:</strong> <span id="preview-invoice-number">INV-001</span></div>
+                        <div><strong>Date:</strong> <span id="preview-invoice-date">2023-01-01</span></div>
+                        <div><strong>Due Date:</strong> <span id="preview-due-date">2023-01-15</span></div>
+                    </div>
+                </div>
+                
+                <div class="invoice-to">
+                    <div><strong>To:</strong></div>
+                    <div id="preview-client-name">Client Name</div>
+                    <div id="preview-client-address">Client Address</div>
+                </div>
+                
+                <table class="invoice-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="preview-items">
+                        <tr>
+                            <td>Sample Item</td>
+                            <td>1</td>
+                            <td>$100.00</td>
+                            <td>$100.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="invoice-totals">
+                    <table>
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td id="preview-subtotal">$100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Tax (0%):</td>
+                            <td id="preview-tax">$0.00</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total:</strong></td>
+                            <td id="preview-total"><strong>$100.00</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="notes">
+                    <strong>Notes:</strong>
+                    <div id="preview-notes">Thank you for your business!</div>
+                </div>
+                
+                <div class="invoice-footer">
+                    <div id="preview-your-company">Your Company</div>
+                    <div id="preview-your-contact">your@email.com</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('invoice-date').value = today;
+            
+            // Set due date to 14 days from today
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 14);
+            document.getElementById('due-date').value = dueDate.toISOString().split('T')[0];
+            
+            // Calculate item totals when quantities or prices change
+            document.getElementById('items-container').addEventListener('input', function(e) {
+                if (e.target.classList.contains('item-qty') || e.target.classList.contains('item-price')) {
+                    const row = e.target.closest('.item-row');
+                    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                    const total = (qty * price).toFixed(2);
+                    row.querySelector('.item-total-value').textContent = total;
+                    updateInvoicePreview();
+                }
+            });
+            
+            // Add new item row
+            document.getElementById('add-item').addEventListener('click', function() {
+                const container = document.getElementById('items-container');
+                const newRow = document.createElement('div');
+                newRow.className = 'item-row';
+                newRow.innerHTML = `
+                    <div class="item-name">
+                        <label>Description</label>
+                        <input type="text" class="item-desc" placeholder="Item description">
+                    </div>
+                    <div class="item-qty">
+                        <label>Qty</label>
+                        <input type="number" class="item-qty" placeholder="1" min="1" value="1">
+                    </div>
+                    <div class="item-price">
+                        <label>Unit Price</label>
+                        <input type="number" class="item-price" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <div class="item-total">
+                        <label>Total</label>
+                        <div class="item-total-value">0.00</div>
+                    </div>
+                `;
+                container.appendChild(newRow);
+            });
+            
+            // Update invoice preview when generate button is clicked
+            document.getElementById('generate-invoice').addEventListener('click', updateInvoicePreview);
+            
+            // Print invoice
+            document.getElementById('print-invoice').addEventListener('click', function() {
+                window.print();
+            });
+            
+            // Send invoice via email
+            document.getElementById('send-invoice').addEventListener('click', function() {
+                const clientEmail = document.getElementById('client-email').value;
+                if (!clientEmail) {
+                    alert('Please enter client email address');
+                    return;
+                }
+                
+                // Generate PDF
+                generatePDF().then(pdfData => {
+                    // Create a blob from the PDF data
+                    const blob = new Blob([pdfData], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create a download link
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `invoice_${document.getElementById('invoice-number').value}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    // Prepare mailto link for Thunderbird
+                    const subject = `Invoice ${document.getElementById('invoice-number').value}`;
+                    const body = `Dear ${document.getElementById('client-name').value},\n\nPlease find attached your invoice.\n\nBest regards,\n${document.getElementById('your-company').value}`;
+                    
+                    // This will open Thunderbird if it's the default mail client
+                    window.location.href = `mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}&attachment=${encodeURIComponent(a.download)}`;
+                    
+                    // Note: The attachment part might not work in all browsers/email clients
+                    // For a more robust solution, you would need a server-side component
+                });
+            });
+            
+            // Initial preview update
+            updateInvoicePreview();
+        });
+        
+        function updateInvoicePreview() {
+            // Update header information
+            document.getElementById('preview-your-company').textContent = document.getElementById('your-company').value || 'Your Company';
+            document.getElementById('preview-your-address').textContent = document.getElementById('your-address').value || '123 Street, City, State, ZIP';
+            document.getElementById('preview-invoice-number').textContent = document.getElementById('invoice-number').value || 'INV-001';
+            document.getElementById('preview-invoice-date').textContent = document.getElementById('invoice-date').value || '2023-01-01';
+            document.getElementById('preview-due-date').textContent = document.getElementById('due-date').value || '2023-01-15';
+            
+            // Update client information
+            document.getElementById('preview-client-name').textContent = document.getElementById('client-name').value || 'Client Name';
+            document.getElementById('preview-client-address').textContent = document.getElementById('client-address').value || 'Client Address';
+            
+            // Update items
+            const itemsContainer = document.getElementById('preview-items');
+            itemsContainer.innerHTML = '';
+            
+            const itemRows = document.querySelectorAll('.item-row');
+            let subtotal = 0;
+            
+            itemRows.forEach(row => {
+                const desc = row.querySelector('.item-desc').value || 'Item description';
+                const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                const total = qty * price;
+                subtotal += total;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${desc}</td>
+                    <td>${qty}</td>
+                    <td>$${price.toFixed(2)}</td>
+                    <td>$${total.toFixed(2)}</td>
+                `;
+                itemsContainer.appendChild(tr);
+            });
+            
+            // Update totals
+            const tax = 0; // You can add tax calculation if needed
+            const total = subtotal + tax;
+            
+            document.getElementById('preview-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('preview-tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('preview-total').textContent = `$${total.toFixed(2)}`;
+            
+            // Update notes
+            document.getElementById('preview-notes').textContent = document.getElementById('notes').value || 'Thank you for your business!';
+            
+            // Update footer
+            document.querySelectorAll('#preview-your-company').forEach(el => {
+                el.textContent = document.getElementById('your-company').value || 'Your Company';
+            });
+            document.getElementById('preview-your-contact').textContent = document.getElementById('your-email').value || 'your@email.com';
+        }
+        
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Capture the invoice template as an image using html2canvas
+            const element = document.getElementById('invoice-template');
+            
+            // Wait for html2canvas to load if it's not already available
+            if (typeof html2canvas !== 'function') {
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+            }
+            
+            return new Promise((resolve) => {
+                html2canvas(element).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = 210; // A4 width in mm
+                    const pageHeight = 295; // A4 height in mm
+                    const imgHeight = canvas.height * imgWidth / canvas.width;
+                    let heightLeft = imgHeight;
+                    let position = 0;
+                    
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                    
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        doc.addPage();
+                        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                    }
+                    
+                    resolve(doc.output('blob'));
+                });
+            });
+        }
+        
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+    </script>
+</body>
+</html>
